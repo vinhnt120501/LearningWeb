@@ -22,8 +22,8 @@ export default function ChatPage() {
         messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // 3. Xứ lý gửi tin nhắn
-    const handleSend = () => {
+    // 3. Xử lý gửi tin nhắn
+    const handleSend = async () => {
         if (inputValue.trim() === '')
             return;
 
@@ -33,20 +33,35 @@ export default function ChatPage() {
             role: 'user',
             content: inputValue,
         };
-        setMessages([...messages, newUserMsg]);
+        setMessages((prev) => [...prev, newUserMsg]);
         setInputValue('');
         setIsTyping(true);
 
-        // Giả lập phản hồi AI (sẽ thay bằng API thật sau)
-        setTimeout(() => {
-            const mockAiMsg: Message = {
+        // 3.2. Gọi API Gateway → Lambda → Bedrock
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+            const res = await fetch(`${API_URL}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: inputValue }),
+            });
+            const data = await res.json();
+            const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: UI_STRINGS.MOCK_AI_RESPONSE,
+                content: data.reply,
             };
-            setMessages((prev) => [...prev, mockAiMsg]);
+            setMessages((prev) => [...prev, aiMsg]);
+        } catch {
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.',
+            };
+            setMessages((prev) => [...prev, errorMsg]);
+        } finally {
             setIsTyping(false);
-        }, 1000);
+        }
     };
 
     const hasMessages = messages.length > 0;
