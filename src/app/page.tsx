@@ -38,6 +38,7 @@ export default function ChatPage() {
         setIsTyping(true);
 
         // 3.2. Gọi API Gateway → Lambda → Bedrock
+        const aiMsgId = (Date.now() + 1).toString();
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
             const res = await fetch(`${API_URL}/chat`, {
@@ -46,20 +47,24 @@ export default function ChatPage() {
                 body: JSON.stringify({ message: inputValue }),
             });
             const data = await res.json();
-            const aiMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: data.reply,
-            };
-            setMessages((prev) => [...prev, aiMsg]);
+            const fullText = data.reply as string;
+
+            // Streaming effect — hiển thị từng ký tự
+            setMessages((prev) => [...prev, { id: aiMsgId, role: 'assistant', content: '' }]);
+            setIsTyping(false);
+            for (let i = 0; i <= fullText.length; i++) {
+                const partial = fullText.slice(0, i);
+                setMessages((prev) =>
+                    prev.map((m) => (m.id === aiMsgId ? { ...m, content: partial } : m))
+                );
+                await new Promise((r) => setTimeout(r, 15));
+            }
         } catch {
-            const errorMsg: Message = {
-                id: (Date.now() + 1).toString(),
+            setMessages((prev) => [...prev, {
+                id: aiMsgId,
                 role: 'assistant',
                 content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.',
-            };
-            setMessages((prev) => [...prev, errorMsg]);
-        } finally {
+            }]);
             setIsTyping(false);
         }
     };

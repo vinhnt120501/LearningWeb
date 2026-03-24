@@ -30,7 +30,7 @@ export default function ChatInput({ value, onChange, onSend }: ChatInputProps) {
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSend()}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) onSend(); }}
           placeholder={UI_STRINGS.INPUT_PLACEHOLDER}
           className="flex-1 bg-transparent border-none focus:outline-none text-base text-slate-700 placeholder:text-slate-400"
         />
