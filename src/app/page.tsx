@@ -50,21 +50,24 @@ export default function ChatPage() {
             const fullText = data.reply as string;
 
             // Streaming effect — hiển thị từng ký tự
-            setMessages((prev) => [...prev, { id: aiMsgId, role: 'assistant', content: '' }]);
+            const aiMsg: Message = { id: aiMsgId, role: 'assistant', content: '' };
+            setMessages((prev) => [...prev, aiMsg]);
             setIsTyping(false);
-            for (let i = 0; i <= fullText.length; i++) {
+
+            for (let i = 1; i <= fullText.length; i++) {
+                await new Promise((r) => setTimeout(r, 15));
                 const partial = fullText.slice(0, i);
                 setMessages((prev) =>
-                    prev.map((m) => (m.id === aiMsgId ? { ...m, content: partial } : m))
+                    prev.map((m) => m.id === aiMsgId ? { ...m, content: partial } : m)
                 );
-                await new Promise((r) => setTimeout(r, 15));
             }
         } catch {
-            setMessages((prev) => [...prev, {
+            const errorMsg: Message = {
                 id: aiMsgId,
                 role: 'assistant',
                 content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.',
-            }]);
+            };
+            setMessages((prev) => [...prev, errorMsg]);
             setIsTyping(false);
         }
     };
