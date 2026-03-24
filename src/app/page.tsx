@@ -18,7 +18,7 @@ export default function ChatPage() {
     const [sessionId, setSessionId] = useState('');
     const messageEndRef = useRef<HTMLDivElement>(null);
 
-    // 2. Tạo sessionId + load lịch sử chat từ DynamoDB
+    // 2. Tạo sessionId
     useEffect(() => {
         let id = localStorage.getItem('sessionId');
         if (!id) {
@@ -26,26 +26,6 @@ export default function ChatPage() {
             localStorage.setItem('sessionId', id);
         }
         setSessionId(id);
-
-        // Load lịch sử chat
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-        fetch(`${API_URL}/history`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: id }),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.messages && data.messages.length > 0) {
-                    const loaded = data.messages.map((msg: { role: string; content: string }, i: number) => ({
-                        id: `history-${i}`,
-                        role: msg.role as 'user' | 'assistant',
-                        content: msg.content,
-                    }));
-                    setMessages(loaded);
-                }
-            })
-            .catch(() => {});
     }, []);
 
     // 3. Auto-scroll - Tự động kéo xuống khi có tin nhắn mới
