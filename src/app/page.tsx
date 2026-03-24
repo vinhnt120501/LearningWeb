@@ -15,9 +15,40 @@ export default function ChatPage() {
     const [inputValue, setInputValue] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [sessionId, setSessionId] = useState('');
     const messageEndRef = useRef<HTMLDivElement>(null);
 
-    // 2. Auto-scroll - Tự động kéo xuống khi có tin nhắn mới
+    // 2. Tạo sessionId + load lịch sử chat từ DynamoDB
+    useEffect(() => {
+        let id = localStorage.getItem('sessionId');
+        if (!id) {
+            id = crypto.randomUUID();
+            localStorage.setItem('sessionId', id);
+        }
+        setSessionId(id);
+
+        // Load lịch sử chat
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+        fetch(`${API_URL}/history`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: id }),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.messages && data.messages.length > 0) {
+                    const loaded = data.messages.map((msg: { role: string; content: string }, i: number) => ({
+                        id: `history-${i}`,
+                        role: msg.role as 'user' | 'assistant',
+                        content: msg.content,
+                    }));
+                    setMessages(loaded);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    // 3. Auto-scroll - Tự động kéo xuống khi có tin nhắn mới
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -44,7 +75,7 @@ export default function ChatPage() {
             const res = await fetch(`${API_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: inputValue }),
+                body: JSON.stringify({ message: inputValue, sessionId }),
             });
             const data = await res.json();
             const fullText = data.reply as string;
